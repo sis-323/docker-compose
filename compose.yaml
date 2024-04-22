@@ -1,0 +1,39 @@
+
+networks:
+  network-ucb-degree:
+    driver: bridge
+
+services:
+  postgres:
+    container_name: ucb-degree-postgres
+    image: postgres
+    restart: always
+    ports:
+      - "5431:5432"
+    environment:
+      POSTGRES_USERNAME: postgres
+      POSTGRES_PASSWORD: admin
+      POSTGRES_URL: jdbc:postgresql://localhost:5432/sis-323
+    networks:
+      - network-ucb-degree
+
+  ucb-degree:
+    container_name: ucb-degree-notification
+    image: ms-notification
+    ports:
+      - "9200:9200"
+    environment:
+      DB_URL: jdbc:postgresql://localhost:5431/sis-323
+      DB_USER: postgres
+      DB_PASSWORD: admin
+
+    networks:
+      - network-ucb-degree
+
+  mailhog:
+    container_name: ucb-degree-mailhog
+    image: mailhog/mailhog
+    ports:
+      - "8025:8025"
+    networks:
+      - network-ucb-degree
