@@ -17,18 +17,42 @@ services:
     networks:
       - network-ucb-degree
 
-  ucb-degree:
+  ucb-degree-notification:
     container_name: ucb-degree-notification
     image: ms-notification
     ports:
       - "9200:9200"
     environment:
-      DB_URL: jdbc:postgresql://localhost:5431/sis-323
+      DB_URL: jdbc:postgresql://postgres:5432/sis-323
       DB_USER: postgres
       DB_PASSWORD: admin
-
     networks:
       - network-ucb-degree
+  
+  ucb-degree-users:
+    container_name: ucb-degree-users
+    image: ms-users
+    ports:
+      - "9100:9100"
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/sis-323
+      DB_USER: postgres
+      DB_PASSWORD: admin
+    networks:
+      - network-ucb-degree
+  
+  ucb-degree-enrollment:
+    container_name: ucb-degree-enrollment
+    image: ms-enrollment
+    ports:
+      - "8100:8100"
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/sis-323
+      DB_USER: postgres
+      DB_PASSWORD: admin
+    networks:
+      - network-ucb-degree
+  
 
   mailhog:
     container_name: ucb-degree-mailhog
@@ -37,3 +61,19 @@ services:
       - "8025:8025"
     networks:
       - network-ucb-degree
+  
+  keycloak:
+    container_name: ucb-degree-keycloak
+    image: quay.io/keycloak/keycloak:24.0.1
+    user: root
+    command: start-dev
+    ports:
+      - "8080:8080"
+    environment:
+      DB_VENDOR: h2
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    networks:
+      - network-ucb-degree
+
+  
