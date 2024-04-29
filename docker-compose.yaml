@@ -1,0 +1,118 @@
+version: '3.7'
+
+networks:
+  ucbdegree-network:
+    driver: bridge
+
+x-common-environment: &common-environment
+  DISCOVERY_SERVER_URL: http://service-discovery:8761/eureka/
+
+x-common-postgres-environment: &common-postgres-environment
+  POSTGRES_USERNAME: postgres
+  POSTGRES_PASSWORD: admin
+  POSTGRES_DB: sis-323
+  POSTGRES_URL: jdbc:postgresql://postgres:5432/sis-323
+
+x-common-keycloak-environment: &common-keycloak-environment
+  KEYCLOAK_ADMIN: admin
+  KEYCLOAK_ADMIN_PASSWORD: admin
+  ISSUER_URI: http://keycloak:8080/realms/sis-323
+
+services: 
+  ###################################################################################
+  ################################# CORE SERVICES ###################################
+  ###################################################################################
+  postgres:
+    container_name: ucbdegree-db
+    image: postgres
+    restart: always
+    environment:
+      <<: *common-postgres-environment
+    volumes:
+      - ./resources/postgres/create_database.sql:/docker-entrypoint-initdb.d/create_database.sql
+      - ./data/db/data:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    networks:
+      - ucbdegree-network
+
+  keycloak:
+    container_name: ucbdegree-keycloak
+    image: quay.io/keycloak/keycloak:24.0.3
+    command:
+      - start-dev
+      - --import-realm
+    environment:
+      <<: *common-keycloak-environment
+    volumes:
+      - ./resources/keycloak/sis-323-kc-config.json:/opt/keycloak/data/import/sis-323-kc-config.json
+    ports:
+      - 8080:8080
+    networks:
+      - ucbdegree-network
+
+  ###################################################################################
+  ############################### TESTING SERVICES ##################################
+  ###################################################################################
+  mailhog:
+    container_name: ucbdegree-mailhog
+    image: mailhog/mailhog
+    ports:
+      - 8025:8025
+    networks:
+      - ucbdegree-network
+
+  ###################################################################################
+  ############################## UCBDEGREE SERVICES #################################
+  ###################################################################################
+  service-discovery:
+    container_name: ucbdegree-service-discovery
+    restart: always
+    image: ucbdegree/ms-discovery:1.0
+    networks:
+      - ucbdegree-network
+    ports:
+      - 8761:8761
+    networks:
+      - ucbdegree-network
+    #TODO: add volumes?
+
+  ms-users:
+    container_name: ucbdegree-ms-users
+    restart: always
+    image: ucbdegree/ms-users:1.0
+    environment:
+      <<: [ *common-postgres-environment, *common-environment ]
+      ISSUER_URI: http://keycloak:8080/realms/sis-323
+    ports:
+      - 9101:9100
+    networks:
+      - ucbdegree-network
+    depends_on:
+      - keycloak
+      - postgres
+      - service-discovery
+    
+  ms-enrollment:
+    container_name: ucbdegree-ms-enrollment
+    image: ucbdegree/ms-enrollment:1.0
+    environment:
+      <<: [ *common-postgres-environment, *common-environment ]
+    ports:
+      - 8100:8100
+    networks:
+        - ucbdegree-network
+    depends_on:
+      - service-discovery
+
+  ms-notification:
+    container_name: ucbdegree-ms-notification
+    image: ucbdegree/ms-notification:1.0
+    environment:
+      <<: [ *common-postgres-environment, *common-environment ]
+    ports:
+      - 9200:9200
+    networks:
+        - ucbdegree-network
+    depends_on:
+      - service-discovery
