@@ -18,6 +18,11 @@ x-common-keycloak-environment: &common-keycloak-environment
   KEYCLOAK_ADMIN_PASSWORD: admin
   ISSUER_URI: http://keycloak:8080/realms/sis-323
 
+x-common-minio-environment: &common-minio-environment
+  MINIO_ROOT_USER: XdkMXb6fY6Rg8rXAhGXw
+  MINIO_ROOT_PASSWORD: K1WgO7CEZr3QBU9MUpr26l0xpUl0IafYnb0lKbNT
+  MINIO_BUCKET_NAME: pm-files
+
 services: 
   ###################################################################################
   ################################# CORE SERVICES ###################################
@@ -50,6 +55,22 @@ services:
       - 8080:8080
     networks:
       - ucbdegree-network
+
+  minio:
+    container_name: ucbdegree-minio
+    image: minio/minio
+    restart: always
+    command: server /data --console-address ":9090"
+    user: root
+    environment:
+      <<: *common-minio-environment
+    volumes:
+      - ./data/minio/data:/data
+    ports:
+      - 9000:9000
+      - 9090:9090
+    networks:
+        - ucbdegree-network
 
   ###################################################################################
   ############################### TESTING SERVICES ##################################
@@ -95,6 +116,7 @@ services:
     
   ms-enrollment:
     container_name: ucbdegree-ms-enrollment
+    restart: always
     image: ucbdegree/ms-enrollment:1.0
     environment:
       <<: [ *common-postgres-environment, *common-environment ]
@@ -107,6 +129,7 @@ services:
 
   ms-notification:
     container_name: ucbdegree-ms-notification
+    restart: always
     image: ucbdegree/ms-notification:1.0
     environment:
       <<: [ *common-postgres-environment, *common-environment ]
@@ -116,3 +139,16 @@ services:
         - ucbdegree-network
     depends_on:
       - service-discovery
+
+  ms-files:
+    container_name: ucbdegree-ms-files
+    restart: always
+    image: ucbdegree/ms-files:1.0
+    environment:
+      <<: [ *common-postgres-environment, *common-minio-environment, *common-environment ]
+    ports:
+      - 8091:8091
+    networks:
+        - ucbdegree-network
+    depends_on:
+      - minio
