@@ -90,8 +90,6 @@ services:
     container_name: ucbdegree-service-discovery
     restart: always
     image: ucbdegree/ms-discovery:1.0
-    networks:
-      - ucbdegree-network
     ports:
       - 8761:8761
     networks:
