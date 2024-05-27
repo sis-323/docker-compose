@@ -35,8 +35,8 @@ services:
     environment:
       <<: *common-postgres-environment
     volumes:
-      - ./resources/postgres/create_database.sql:/docker-entrypoint-initdb.d/create_database.sql
-      - ./data/db/data:/var/lib/postgresql/data
+      - ./SIS-_323.sql:/docker-entrypoint-initdb.d/create_database.sql
+      - ./data/db/data:/var/lib/postgresql/data && sudo chmod 700 ./data/db/data
     ports:
       - 5433:5432
     networks:
@@ -51,7 +51,7 @@ services:
     environment:
       <<: *common-keycloak-environment
     volumes:
-      - ./resources/keycloak/sis-323-kc-config.json:/opt/keycloak/data/import/sis-323-kc-config.json
+      - ./resources/keycloak/sis-323-kc-config:/opt/keycloak/data/import/sis-323-kc-config.json
     ports:
       - 8080:8080
     networks:
