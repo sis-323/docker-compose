@@ -12,7 +12,7 @@ x-common-postgres-environment: &common-postgres-environment
   POSTGRES_USERNAME: postgres
   POSTGRES_PASSWORD: admin
   POSTGRES_DB: sis-323
-  POSTGRES_URL: jdbc:postgresql://postgres:5432/sis-323
+  POSTGRES_URL: jdbc:postgresql://postgres:5433/sis-323
 
 x-common-keycloak-environment: &common-keycloak-environment
   KEYCLOAK_ADMIN: admin
@@ -87,6 +87,21 @@ services:
   ###################################################################################
   ############################## UCBDEGREE SERVICES #################################
   ###################################################################################
+
+  gateway:
+    container_name: ucbdegree-api-gateway
+    restart: always
+    image: ucbdegree/ms-gateway:1.0
+    environment:
+      - DISCOVERY-SERVER-URL=http://service-discovery:8761/eureka/
+    ports:
+      - 8081:8081
+    networks:
+        - ucbdegree-network
+    restart: always
+    depends_on:
+      - service-discovery
+
   service-discovery:
     container_name: ucbdegree-service-discovery
     restart: always
