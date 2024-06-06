@@ -7,22 +7,31 @@ networks:
 x-common-environment: &common-environment
   DISCOVERY_SERVER_URL: http://service-discovery:8761/eureka/
   KEYCLOAK_AUTH_SERVER_URL: http://keycloak:8080
+  PROXY_ADDRESS_FORWARDING: true
 
 x-common-postgres-environment: &common-postgres-environment
   POSTGRES_USERNAME: postgres
   POSTGRES_PASSWORD: admin
   POSTGRES_DB: sis-323
-  POSTGRES_URL: jdbc:postgresql://postgres:5433/sis-323
+  POSTGRES_URL: jdbc:postgresql://postgres/sis-323
 
 x-common-keycloak-environment: &common-keycloak-environment
   KEYCLOAK_ADMIN: admin
   KEYCLOAK_ADMIN_PASSWORD: admin
+  AUTH_SERVER_URL: http://keycloak:8080
   ISSUER_URI: http://keycloak:8080/realms/sis-323
 
 x-common-minio-environment: &common-minio-environment
+  MINIO_URL: http://minio:9000
   MINIO_ROOT_USER: XdkMXb6fY6Rg8rXAhGXw
   MINIO_ROOT_PASSWORD: K1WgO7CEZr3QBU9MUpr26l0xpUl0IafYnb0lKbNT
   MINIO_BUCKET_NAME: pm-files
+
+x-common-mailhog-environment: &common-mailhog-environment
+  MAIL_HOST: mailhog 
+  MAIL_PORT: 1025
+  MAIL_USERNAME: user
+  MAIL_PASSWORD: password
 
 services: 
   ###################################################################################
@@ -81,6 +90,7 @@ services:
     image: mailhog/mailhog
     ports:
       - 8025:8025
+      - 1025:1025
     networks:
       - ucbdegree-network
 
@@ -110,11 +120,10 @@ services:
       - 8761:8761
     networks:
       - ucbdegree-network
-    #TODO: add volumes?
 
   # ms-users:
   #   container_name: ucbdegree-ms-users
-  #   restart: always
+  #   start: always
   #   image: ucbdegree/ms-users:1.0
   #   environment:
   #     <<: [ *common-postgres-environment, *common-environment ]
@@ -127,7 +136,7 @@ services:
   #     - keycloak
   #     - postgres
   #     - service-discovery
-    
+  # 
   # ms-enrollment:
   #   container_name: ucbdegree-ms-enrollment
   #   restart: always
@@ -140,20 +149,20 @@ services:
   #       - ucbdegree-network
   #   depends_on:
   #     - service-discovery
-
+  # 
   # ms-notification:
   #   container_name: ucbdegree-ms-notification
   #   restart: always
   #   image: ucbdegree/ms-notification:1.0
   #   environment:
-  #     <<: [ *common-postgres-environment, *common-environment ]
+  #     <<: [ *common-postgres-environment, *common-environment, *common-mailhog-environment ]
   #   ports:
   #     - 9200:9200
   #   networks:
   #       - ucbdegree-network
   #   depends_on:
   #     - service-discovery
-
+  # 
   # ms-files:
   #   container_name: ucbdegree-ms-files
   #   restart: always
@@ -165,4 +174,14 @@ services:
   #   networks:
   #       - ucbdegree-network
   #   depends_on:
+  #     - service-discovery
   #     - minio
+  #
+  # frontend:
+  #   container_name: ucbdegree-frontend
+  #   restart: always
+  #   image: ucbdegree/frontend:1.0
+  #   ports:
+  #     - 80:80
+  #   networks:
+  #     - ucbdegree-network
