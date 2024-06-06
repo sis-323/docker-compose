@@ -1,5 +1,5 @@
 -- Created by Vertabelo (http://vertabelo.com)
--- Last modification date: 2024-04-21 22:45:56.638
+-- Last modification date: 2024-05-27 01:21:56.4
 
 -- tables
 -- Table: ARCHIVO
@@ -62,6 +62,7 @@ CREATE TABLE ENTREGABLE_ESTUDIANTE (
 -- Table: INSCRIPCION
 CREATE TABLE INSCRIPCION (
     id_inscripcion serial  NOT NULL,
+    id_observacion int  NULL,
     id_persona int  NOT NULL,
     id_propuesta int  NOT NULL,
     estado varchar(15)  NOT NULL,
@@ -94,6 +95,15 @@ CREATE TABLE MODALIDADES (
     CONSTRAINT MODALIDADES_pk PRIMARY KEY (id_modalidad)
 );
 
+-- Table: OBSERVACION
+CREATE TABLE OBSERVACION (
+    id_observacion serial  NOT NULL,
+    observaci text  NOT NULL,
+    fecha date  NOT NULL,
+    subido_por varchar(100)  NOT NULL,
+    CONSTRAINT OBSERVACION_pk PRIMARY KEY (id_observacion)
+);
+
 -- Table: PANEL
 CREATE TABLE PANEL (
     id_panel serial  NOT NULL,
@@ -120,6 +130,7 @@ CREATE TABLE PROYECTOS_FINALES (
     year varchar(15)  NOT NULL,
     materia int  NOT NULL,
     estado boolean  NOT NULL,
+    finalizado boolean  NOT NULL,
     CONSTRAINT PROYECTOS_FINALES_pk PRIMARY KEY (id_proyecto_final)
 );
 
@@ -170,5 +181,80 @@ CREATE TABLE SESIONES_VISITA (
     CONSTRAINT SESIONES_VISITA_pk PRIMARY KEY (id_sesision)
 );
 
--- End of file.
+ --- INSERTS
+insert into MODALIDADES (modalidad) values ('Taller de Grado');
 
+-- SEARCH ENGINE
+-- add search column
+ALTER TABLE PROYECTOS_FINALES ADD COLUMN search tsvector;
+
+-- create trigger function
+CREATE OR REPLACE FUNCTION generate_search_vector() RETURNS TRIGGER AS $$
+BEGIN
+    NEW.search := 
+        setweight(to_tsvector('spanish', NEW.titulo), 'A') || ' ' ||
+        setweight(to_tsvector('spanish', NEW.resumen), 'B') || ' ' ||
+        setweight(to_tsvector('simple', 
+            (SELECT STRING_AGG(m.materia, ' ') 
+             FROM MATERIAS_PROYECTOS_FINALES mpf
+             JOIN MATERIAS_BIBLIOTECA m ON mpf.id_materia_biblioteca = m.id_materia_biblioteca
+             WHERE mpf.id_proyecto_final = NEW.id_proyecto_final)
+        ), 'C');
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- set trigger
+CREATE TRIGGER update_search_vector
+BEFORE INSERT OR UPDATE ON PROYECTOS_FINALES
+FOR EACH ROW
+EXECUTE FUNCTION generate_search_vector();
+
+-- update existing rows
+UPDATE PROYECTOS_FINALES SET search = 
+    setweight(to_tsvector('spanish', titulo), 'A') || ' ' ||
+    setweight(to_tsvector('spanish', resumen), 'B') || ' ' ||
+    setweight(to_tsvector('simple', 
+        (SELECT STRING_AGG(m.materia, ' ') 
+         FROM MATERIAS_PROYECTOS_FINALES mpf
+         JOIN MATERIAS_BIBLIOTECA m ON mpf.id_materia_biblioteca = m.id_materia_biblioteca
+         WHERE mpf.id_proyecto_final = PROYECTOS_FINALES.id_proyecto_final)
+    ), 'C');
+
+-- create index
+CREATE INDEX idx_search on proyectos_finales using GIN(search);
+
+-- create search function
+CREATE OR REPLACE FUNCTION search_projects(term text)
+RETURNS TABLE(
+	id_proyecto_final int,
+	id_asignacion int,
+	titulo text,
+	resumen text,
+	"year" varchar,
+	materia int,
+	estado boolean,
+	finalizado boolean,
+	rank real
+)
+AS
+$$
+
+SELECT
+	pf.id_proyecto_final,
+	pf.id_asignacion,
+	pf.titulo,
+	pf.resumen, 
+	pf."year",
+	pf.materia,
+	pf.estado,
+	pf.finalizado,
+	ts_rank(pf.search, websearch_to_tsquery('spanish', term)) +
+	ts_rank(pf.search, websearch_to_tsquery('simple', term)) AS rank
+FROM proyectos_finales pf
+WHERE pf.search @@ websearch_to_tsquery('spanish', term)
+OR pf.search @@ websearch_to_tsquery('simple', term)
+ORDER BY rank DESC;
+
+
+$$ LANGUAGE SQL;
