@@ -1,7 +1,20 @@
 -- Created by Vertabelo (http://vertabelo.com)
--- Last modification date: 2024-05-27 20:37:09.89
+-- Last modification date: 2024-06-15 20:44:01.333
 
 -- tables
+-- Table: ACTA_DEFENSA
+CREATE TABLE ACTA_DEFENSA (
+    id_acta serial  NOT NULL,
+    id_archivo int  NOT NULL,
+    id_proyecto_final int  NOT NULL,
+    fecha date  NOT NULL,
+    nota int  NOT NULL,
+    estado varchar(50)  NOT NULL,
+    horario varchar(100)  NOT NULL,
+    id_carta int  NOT NULL,
+    CONSTRAINT ACTA_DEFENSA_pk PRIMARY KEY (id_acta)
+);
+
 -- Table: ARCHIVO
 CREATE TABLE ARCHIVO (
     id_archivo serial  NOT NULL,
@@ -28,6 +41,17 @@ CREATE TABLE ASIGNACIONES (
     CONSTRAINT ASIGNACIONES_pk PRIMARY KEY (id_asignacion)
 );
 
+-- Table: CARTA_CUMPLIMIENTO
+CREATE TABLE CARTA_CUMPLIMIENTO (
+    id_carta serial  NOT NULL,
+    id_archivo int  NOT NULL,
+    id_proyecto_final int  NOT NULL,
+    fecha DATE  NOT NULL,
+    hora timestamp  NOT NULL,
+    aprobada boolean  NOT NULL,
+    CONSTRAINT CARTA_CUMPLIMIENTO_pk PRIMARY KEY (id_carta)
+);
+
 -- Table: ENTREGABLES_CRONOGRAMA
 CREATE TABLE ENTREGABLES_CRONOGRAMA (
     id_cronograma serial  NOT NULL,
@@ -51,6 +75,7 @@ CREATE TABLE ENTREGABLE_CRONOGRAMA_ARCHIVO (
 -- Table: ENTREGABLE_ESTUDIANTE
 CREATE TABLE ENTREGABLE_ESTUDIANTE (
     id_entregable serial  NOT NULL,
+    id_proyecto_final int  NOT NULL,
     id_archivo_entregable int  NOT NULL,
     id_cronograma int  NOT NULL,
     id_asignacion int  NOT NULL,
@@ -82,9 +107,9 @@ CREATE TABLE MATERIAS_BIBLIOTECA (
 
 -- Table: MATERIAS_PROYECTOS_FINALES
 CREATE TABLE MATERIAS_PROYECTOS_FINALES (
-    id_materia_proyecto int  NOT NULL,
-    id_proyecto_final int  NOT NULL,
+    id_materia_proyecto serial  NOT NULL,
     id_materia_biblioteca int  NOT NULL,
+    id_proyecto_aprobado int  NOT NULL,
     CONSTRAINT MATERIAS_PROYECTOS_FINALES_pk PRIMARY KEY (id_materia_proyecto)
 );
 
@@ -126,12 +151,18 @@ CREATE TABLE PROYECTOS_FINALES (
     id_proyecto_final serial  NOT NULL,
     id_asignacion int  NOT NULL,
     titulo varchar(200)  NOT NULL,
-    resumen varchar(2000)  NOT NULL,
     year varchar(15)  NOT NULL,
-    materia int  NOT NULL,
     estado boolean  NOT NULL,
     finalizado boolean  NOT NULL,
     CONSTRAINT PROYECTOS_FINALES_pk PRIMARY KEY (id_proyecto_final)
+);
+
+-- Table: PROYECTO_APROBADO
+CREATE TABLE PROYECTO_APROBADO (
+    id_proyecto_aprobado serial  NOT NULL,
+    fecha_aprobado date  NOT NULL,
+    id_acta int  NOT NULL,
+    CONSTRAINT PROYECTO_APROBADO_pk PRIMARY KEY (id_proyecto_aprobado)
 );
 
 -- Table: Persona
@@ -186,6 +217,30 @@ CREATE TABLE SESIONES_VISITA (
 );
 
 -- foreign keys
+-- Reference: ACTA_DEFENSA_ARCHIVO (table: ACTA_DEFENSA)
+ALTER TABLE ACTA_DEFENSA ADD CONSTRAINT ACTA_DEFENSA_ARCHIVO
+    FOREIGN KEY (id_archivo)
+    REFERENCES ARCHIVO (id_archivo)  
+    NOT DEFERRABLE 
+    INITIALLY IMMEDIATE
+;
+
+-- Reference: ACTA_DEFENSA_CARTA_CUMPLIMIENTO (table: ACTA_DEFENSA)
+ALTER TABLE ACTA_DEFENSA ADD CONSTRAINT ACTA_DEFENSA_CARTA_CUMPLIMIENTO
+    FOREIGN KEY (id_carta)
+    REFERENCES CARTA_CUMPLIMIENTO (id_carta)  
+    NOT DEFERRABLE 
+    INITIALLY IMMEDIATE
+;
+
+-- Reference: ACTA_DEFENSA_PROYECTOS_FINALES (table: ACTA_DEFENSA)
+ALTER TABLE ACTA_DEFENSA ADD CONSTRAINT ACTA_DEFENSA_PROYECTOS_FINALES
+    FOREIGN KEY (id_proyecto_final)
+    REFERENCES PROYECTOS_FINALES (id_proyecto_final)  
+    NOT DEFERRABLE 
+    INITIALLY IMMEDIATE
+;
+
 -- Reference: ARCHIVO_ENTREGABLE_ARCHIVO (table: ARCHIVO_ENTREGABLE)
 ALTER TABLE ARCHIVO_ENTREGABLE ADD CONSTRAINT ARCHIVO_ENTREGABLE_ARCHIVO
     FOREIGN KEY (id_archivo)
@@ -214,6 +269,14 @@ ALTER TABLE ASIGNACIONES ADD CONSTRAINT ASIGNACIONES_RELATOR
 ALTER TABLE ASIGNACIONES ADD CONSTRAINT ASIGNACIONES_TUTOR
     FOREIGN KEY (id_tutor)
     REFERENCES Persona (id_persona)  
+    NOT DEFERRABLE 
+    INITIALLY IMMEDIATE
+;
+
+-- Reference: CARTA_CUMPLIMIENTO_PROYECTOS_FINALES (table: CARTA_CUMPLIMIENTO)
+ALTER TABLE CARTA_CUMPLIMIENTO ADD CONSTRAINT CARTA_CUMPLIMIENTO_PROYECTOS_FINALES
+    FOREIGN KEY (id_proyecto_final)
+    REFERENCES PROYECTOS_FINALES (id_proyecto_final)  
     NOT DEFERRABLE 
     INITIALLY IMMEDIATE
 ;
@@ -266,6 +329,14 @@ ALTER TABLE ENTREGABLE_ESTUDIANTE ADD CONSTRAINT ENTREGABLE_ESTUDIANTE_ENTREGABL
     INITIALLY IMMEDIATE
 ;
 
+-- Reference: ENTREGABLE_ESTUDIANTE_PROYECTOS_FINALES (table: ENTREGABLE_ESTUDIANTE)
+ALTER TABLE ENTREGABLE_ESTUDIANTE ADD CONSTRAINT ENTREGABLE_ESTUDIANTE_PROYECTOS_FINALES
+    FOREIGN KEY (id_proyecto_final)
+    REFERENCES PROYECTOS_FINALES (id_proyecto_final)  
+    NOT DEFERRABLE 
+    INITIALLY IMMEDIATE
+;
+
 -- Reference: INSCRIPCION_OBSERVACION (table: INSCRIPCION)
 ALTER TABLE INSCRIPCION ADD CONSTRAINT INSCRIPCION_OBSERVACION
     FOREIGN KEY (id_observacion)
@@ -298,10 +369,10 @@ ALTER TABLE MATERIAS_PROYECTOS_FINALES ADD CONSTRAINT MATERIAS_PROYECTOS_FINALES
     INITIALLY IMMEDIATE
 ;
 
--- Reference: MATERIAS_PROYECTOS_FINALES_PROYECTOS_FINALES (table: MATERIAS_PROYECTOS_FINALES)
-ALTER TABLE MATERIAS_PROYECTOS_FINALES ADD CONSTRAINT MATERIAS_PROYECTOS_FINALES_PROYECTOS_FINALES
-    FOREIGN KEY (id_proyecto_final)
-    REFERENCES PROYECTOS_FINALES (id_proyecto_final)  
+-- Reference: MATERIAS_PROYECTOS_FINALES_PROYECTO_APROBADO (table: MATERIAS_PROYECTOS_FINALES)
+ALTER TABLE MATERIAS_PROYECTOS_FINALES ADD CONSTRAINT MATERIAS_PROYECTOS_FINALES_PROYECTO_APROBADO
+    FOREIGN KEY (id_proyecto_aprobado)
+    REFERENCES PROYECTO_APROBADO (id_proyecto_aprobado)  
     NOT DEFERRABLE 
     INITIALLY IMMEDIATE
 ;
@@ -326,6 +397,14 @@ ALTER TABLE PROPUESTAS ADD CONSTRAINT PROPUESTA_ARCHIVO
 ALTER TABLE PROYECTOS_FINALES ADD CONSTRAINT PROYECTOS_FINALES_ASIGNACIONES
     FOREIGN KEY (id_asignacion)
     REFERENCES ASIGNACIONES (id_asignacion)  
+    NOT DEFERRABLE 
+    INITIALLY IMMEDIATE
+;
+
+-- Reference: PROYECTO_APROBADO_ACTA_DEFENSA (table: PROYECTO_APROBADO)
+ALTER TABLE PROYECTO_APROBADO ADD CONSTRAINT PROYECTO_APROBADO_ACTA_DEFENSA
+    FOREIGN KEY (id_acta)
+    REFERENCES ACTA_DEFENSA (id_acta)  
     NOT DEFERRABLE 
     INITIALLY IMMEDIATE
 ;
@@ -386,87 +465,13 @@ ALTER TABLE SESIONES_VISITA ADD CONSTRAINT SESIONES_VISITA_ASIGNACIONES
     INITIALLY IMMEDIATE
 ;
 
--- END OF DATABASE CREATION SCRIPT
+-- Reference: Table_33_ARCHIVO (table: CARTA_CUMPLIMIENTO)
+ALTER TABLE CARTA_CUMPLIMIENTO ADD CONSTRAINT Table_33_ARCHIVO
+    FOREIGN KEY (id_archivo)
+    REFERENCES ARCHIVO (id_archivo)  
+    NOT DEFERRABLE 
+    INITIALLY IMMEDIATE
+;
 
+-- End of file.
 
- --- INSERTS
-insert into MODALIDADES (modalidad) values ('Taller de Grado');
-
-insert into PERSONA (id_modalidad, id_kc, nombre, apellido_paterno, apellido_materno, correo, numero_celular, estado, grupo, semestre) 
-values (1, 'f54676b1-4db3-45fd-85f7-665438b51483', 'Administrador', 'Sistema de', 'Titulaciones', 'mail@test.com', '1002321', true, 'professors', 'I-2024');
-
-
--- SEARCH ENGINE
--- add search column
-ALTER TABLE PROYECTOS_FINALES ADD COLUMN search tsvector;
-
--- create trigger function
-CREATE OR REPLACE FUNCTION generate_search_vector() RETURNS TRIGGER AS $$
-BEGIN
-    NEW.search := 
-        setweight(to_tsvector('spanish', NEW.titulo), 'A') || ' ' ||
-        setweight(to_tsvector('spanish', NEW.resumen), 'B') || ' ' ||
-        setweight(to_tsvector('simple', 
-            (SELECT STRING_AGG(m.materia, ' ') 
-             FROM MATERIAS_PROYECTOS_FINALES mpf
-             JOIN MATERIAS_BIBLIOTECA m ON mpf.id_materia_biblioteca = m.id_materia_biblioteca
-             WHERE mpf.id_proyecto_final = NEW.id_proyecto_final)
-        ), 'C');
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- set trigger
-CREATE TRIGGER update_search_vector
-BEFORE INSERT OR UPDATE ON PROYECTOS_FINALES
-FOR EACH ROW
-EXECUTE FUNCTION generate_search_vector();
-
--- update existing rows
-UPDATE PROYECTOS_FINALES SET search = 
-    setweight(to_tsvector('spanish', titulo), 'A') || ' ' ||
-    setweight(to_tsvector('spanish', resumen), 'B') || ' ' ||
-    setweight(to_tsvector('simple', 
-        (SELECT STRING_AGG(m.materia, ' ') 
-         FROM MATERIAS_PROYECTOS_FINALES mpf
-         JOIN MATERIAS_BIBLIOTECA m ON mpf.id_materia_biblioteca = m.id_materia_biblioteca
-         WHERE mpf.id_proyecto_final = PROYECTOS_FINALES.id_proyecto_final)
-    ), 'C');
-
--- create index
-CREATE INDEX idx_search on proyectos_finales using GIN(search);
-
--- create search function
-CREATE OR REPLACE FUNCTION search_projects(term text)
-RETURNS TABLE(
-	id_proyecto_final int,
-	id_asignacion int,
-	titulo text,
-	resumen text,
-	"year" varchar,
-	materia int,
-	estado boolean,
-	finalizado boolean,
-	rank real
-)
-AS
-$$
-
-SELECT
-	pf.id_proyecto_final,
-	pf.id_asignacion,
-	pf.titulo,
-	pf.resumen, 
-	pf."year",
-	pf.materia,
-	pf.estado,
-	pf.finalizado,
-	ts_rank(pf.search, websearch_to_tsquery('spanish', term)) +
-	ts_rank(pf.search, websearch_to_tsquery('simple', term)) AS rank
-FROM proyectos_finales pf
-WHERE pf.search @@ websearch_to_tsquery('spanish', term)
-OR pf.search @@ websearch_to_tsquery('simple', term)
-ORDER BY rank DESC;
-
-
-$$ LANGUAGE SQL;

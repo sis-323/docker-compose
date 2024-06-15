@@ -7,31 +7,22 @@ networks:
 x-common-environment: &common-environment
   DISCOVERY_SERVER_URL: http://service-discovery:8761/eureka/
   KEYCLOAK_AUTH_SERVER_URL: http://keycloak:8080
-  PROXY_ADDRESS_FORWARDING: true
 
 x-common-postgres-environment: &common-postgres-environment
   POSTGRES_USERNAME: postgres
   POSTGRES_PASSWORD: admin
   POSTGRES_DB: sis-323
-  POSTGRES_URL: jdbc:postgresql://postgres/sis-323
+  POSTGRES_URL: jdbc:postgresql://postgres:5433/sis-323
 
 x-common-keycloak-environment: &common-keycloak-environment
   KEYCLOAK_ADMIN: admin
   KEYCLOAK_ADMIN_PASSWORD: admin
-  AUTH_SERVER_URL: http://keycloak:8080
   ISSUER_URI: http://keycloak:8080/realms/sis-323
 
 x-common-minio-environment: &common-minio-environment
-  MINIO_URL: http://minio:9000
   MINIO_ROOT_USER: XdkMXb6fY6Rg8rXAhGXw
   MINIO_ROOT_PASSWORD: K1WgO7CEZr3QBU9MUpr26l0xpUl0IafYnb0lKbNT
   MINIO_BUCKET_NAME: pm-files
-
-x-common-mailhog-environment: &common-mailhog-environment
-  MAIL_HOST: mailhog 
-  MAIL_PORT: 1025
-  MAIL_USERNAME: user
-  MAIL_PASSWORD: password
 
 services: 
   ###################################################################################
@@ -44,8 +35,8 @@ services:
     environment:
       <<: *common-postgres-environment
     volumes:
-      - ./SIS-_323.sql:/docker-entrypoint-initdb.d/create_database.sql
-      - ./data/db/data:/var/lib/postgresql/data && sudo chmod 700 ./data/db/data
+      - ./resources/postgres/create_database.sql:/docker-entrypoint-initdb.d/create_database.sql
+      - ./data/db/data:/var/lib/postgresql/data
     ports:
       - 5433:5432
     networks:
@@ -60,7 +51,7 @@ services:
     environment:
       <<: *common-keycloak-environment
     volumes:
-      - ./resources/keycloak/sis-323-kc-config:/opt/keycloak/data/import/sis-323-kc-config.json
+      - ./resources/keycloak/sis-323-kc-config.json:/opt/keycloak/data/import/sis-323-kc-config.json
     ports:
       - 8080:8080
     networks:
@@ -90,7 +81,6 @@ services:
     image: mailhog/mailhog
     ports:
       - 8025:8025
-      - 1025:1025
     networks:
       - ucbdegree-network
 
@@ -120,68 +110,59 @@ services:
       - 8761:8761
     networks:
       - ucbdegree-network
+    #TODO: add volumes?
 
-  ms-users:
-    container_name: ucbdegree-ms-users
-    restart: always
-    image: ucbdegree/ms-users:1.0
-    environment:
-      <<: [ *common-postgres-environment, *common-environment ]
-      ISSUER_URI: http://keycloak:8080/realms/sis-323
-    ports:
-      - 9101:9100
-    networks:
-      - ucbdegree-network
-    depends_on:
-      - keycloak
-      - postgres
-      - service-discovery
-
-  ms-enrollment:
-    container_name: ucbdegree-ms-enrollment
-    restart: always
-    image: ucbdegree/ms-enrollment:1.0
-    environment:
-      <<: [ *common-postgres-environment, *common-environment ]
-    ports:
-      - 8100:8100
-    networks:
-        - ucbdegree-network
-    depends_on:
-      - service-discovery
-
-  ms-notification:
-    container_name: ucbdegree-ms-notification
-    restart: always
-    image: ucbdegree/ms-notification:1.0
-    environment:
-      <<: [ *common-postgres-environment, *common-environment, *common-mailhog-environment ]
-    ports:
-      - 9200:9200
-    networks:
-        - ucbdegree-network
-    depends_on:
-      - service-discovery
-
-  ms-files:
-    container_name: ucbdegree-ms-files
-    restart: always
-    image: ucbdegree/ms-files:1.0
-    environment:
-      <<: [ *common-postgres-environment, *common-minio-environment, *common-environment ]
-    ports:
-      - 8091:8091
-    networks:
-        - ucbdegree-network
-    depends_on:
-      - service-discovery
-      - minio
-
-  # frontend:
-  #   container_name: ucbdegree-frontend
+  # ms-users:
+  #   container_name: ucbdegree-ms-users
   #   restart: always
-  #   image: ucbdegree/frontend:1.0
+  #   image: ucbdegree/ms-users:1.0
+  #   environment:
+  #     <<: [ *common-postgres-environment, *common-environment ]
+  #     ISSUER_URI: http://keycloak:8080/realms/sis-323
   #   ports:
-  #     - 80:80
+  #     - 9101:9100
   #   networks:
   #     - ucbdegree-network
+  #   depends_on:
+  #     - keycloak
+  #     - postgres
+  #     - service-discovery
+    
+  # ms-enrollment:
+  #   container_name: ucbdegree-ms-enrollment
+  #   restart: always
+  #   image: ucbdegree/ms-enrollment:1.0
+  #   environment:
+  #     <<: [ *common-postgres-environment, *common-environment ]
+  #   ports:
+  #     - 8100:8100
+  #   networks:
+  #       - ucbdegree-network
+  #   depends_on:
+  #     - service-discovery
+
+  # ms-notification:
+  #   container_name: ucbdegree-ms-notification
+  #   restart: always
+  #   image: ucbdegree/ms-notification:1.0
+  #   environment:
+  #     <<: [ *common-postgres-environment, *common-environment ]
+  #   ports:
+  #     - 9200:9200
+  #   networks:
+  #       - ucbdegree-network
+  #   depends_on:
+  #     - service-discovery
+
+  # ms-files:
+  #   container_name: ucbdegree-ms-files
+  #   restart: always
+  #   image: ucbdegree/ms-files:1.0
+  #   environment:
+  #     <<: [ *common-postgres-environment, *common-minio-environment, *common-environment ]
+  #   ports:
+  #     - 8091:8091
+  #   networks:
+  #       - ucbdegree-network
+  #   depends_on:
+  #     - minio
