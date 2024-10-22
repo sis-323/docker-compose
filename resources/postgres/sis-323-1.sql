@@ -1,5 +1,5 @@
 -- Created by Vertabelo (http://vertabelo.com)
--- Last modification date: 2024-06-15 20:44:01.333
+-- Last modification date: 2024-06-15 21:56:31.034
 
 -- tables
 -- Table: ACTA_DEFENSA
@@ -48,7 +48,8 @@ CREATE TABLE CARTA_CUMPLIMIENTO (
     id_proyecto_final int  NOT NULL,
     fecha DATE  NOT NULL,
     hora timestamp  NOT NULL,
-    aprobada boolean  NOT NULL,
+    aprobada_por_tutor boolean  NULL,
+    aprobado_por_relator boolean  NULL,
     CONSTRAINT CARTA_CUMPLIMIENTO_pk PRIMARY KEY (id_carta)
 );
 
@@ -160,8 +161,11 @@ CREATE TABLE PROYECTOS_FINALES (
 -- Table: PROYECTO_APROBADO
 CREATE TABLE PROYECTO_APROBADO (
     id_proyecto_aprobado serial  NOT NULL,
-    fecha_aprobado date  NOT NULL,
     id_acta int  NOT NULL,
+    fecha_aprobado date  NOT NULL,
+    resumen text  NOT NULL,
+    titulo_oficial varchar(1000)  NOT NULL,
+    autor varchar(250)  NOT NULL,
     CONSTRAINT PROYECTO_APROBADO_pk PRIMARY KEY (id_proyecto_aprobado)
 );
 
@@ -474,4 +478,17 @@ ALTER TABLE CARTA_CUMPLIMIENTO ADD CONSTRAINT Table_33_ARCHIVO
 ;
 
 -- End of file.
+
+--
+insert into MODALIDADES (modalidad) values ('Taller de Grado');
+
+insert into PERSONA (id_modalidad, id_kc, nombre, apellido_paterno, apellido_materno, correo, numero_celular, estado, grupo, semestre)
+values (1, 'c52cbb95-5483-4781-857b-15c7a37d464c', 'Administrador', 'Sistema de', 'Titulaciones', 'mail@test.com', '1002321', true, 'professors', 'II-2024');
+
+insert into PERSONA (id_modalidad, id_kc, nombre, apellido_paterno, apellido_materno, correo, numero_celular, estado, grupo, semestre)
+values (1, '47b30713-21c1-44c7-8105-a4a35b3beda0', 'Juan', 'Perez', 'Gutierrez', 'juan.perez@ucb.edu.bo', '65117251', true, 'students', 'II-2024');
+
+insert into PERSONA (id_modalidad, id_kc, nombre, apellido_paterno, apellido_materno, correo, numero_celular, estado, grupo, semestre)
+values (1, 'adfbaf75-146f-4519-b37e-6eb56869d1d5', 'Lourdes', 'Peredo', 'Peredez', 'lourdes@gmail.com', '99991919', true, 'tutors', 'II-2024');
+
 

@@ -35,8 +35,8 @@ services:
     environment:
       <<: *common-postgres-environment
     volumes:
-      - ./resources/postgres/create_database.sql:/docker-entrypoint-initdb.d/create_database.sql
-      - ./data/db/data:/var/lib/postgresql/data
+      - ./resources/postgres/sis-323-1.sql:/docker-entrypoint-initdb.d/create_database.sql
+      - ./data/db/data:/var/lib/postgresql/data && chmod 777 /var/lib/postgresql/data
     ports:
       - 5433:5432
     networks:
@@ -81,6 +81,7 @@ services:
     image: mailhog/mailhog
     ports:
       - 8025:8025
+      - 1025:1025
     networks:
       - ucbdegree-network
 
@@ -98,7 +99,6 @@ services:
       - 8081:8081
     networks:
         - ucbdegree-network
-    restart: always
     depends_on:
       - service-discovery
 
